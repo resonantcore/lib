@@ -10,7 +10,7 @@ abstract class Secure
      * @param bool $fail_open - Trigger a warning rather than throwing an exception
      * @return string
      */
-    public function random($bytes, $fail_open = false)
+    public static function random($bytes, $fail_open = false)
     {
         if (!is_int($bytes) || $bytes < 1) {
             if ($fail_open) {
