@@ -3,7 +3,7 @@
 spl_autoload_register(function($class) {
     // does the class use the namespace prefix?
     $namespace = 'Resonantcore\\Lib\\';
-    $base_dir = __DIR__.'/lib/';
+    $base_dir = __DIR__.'/src/';
 
     $len = strlen($namespace);
     if (strncmp($namespace, $class, $len) !== 0) {
