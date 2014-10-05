@@ -12,7 +12,10 @@ class CSRF
     public $hmac_ip = true;
 
     /**
-     * Insert a CSRF token to a form
+     * Insert a CSRF prevention token to a form
+     * 
+     * @param boolean $echo - output to stdout? If false, return a string.
+     * @return string
      */
     public static function insert_token($echo = true)
     {
@@ -56,6 +59,7 @@ class CSRF
 
     /**
      * Validate a request
+     * @return boolean
      */
     public static function validate_request()
     {
@@ -100,6 +104,11 @@ class CSRF
 
     }
 
+    /**
+     * Generate, store, and return the index and token
+     * 
+     * @return array [string, string]
+     */
     protected static function _generateToken()
     {
         $index = \base64_encode(\Resonantcore\Lib\Secure::random(18));
@@ -114,7 +123,11 @@ class CSRF
         self::_recycleTokens();
         return [ $index, $token ];
     }
-
+    
+    /**
+     * Enforce an upper limit on the number of tokens stored in session state
+     * by removing the oldest tokens first.
+     */
     protected static function _recycleTokens()
     {
         \uasort($_SESSION['CSRF'], function($a, $b) {
