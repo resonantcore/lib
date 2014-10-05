@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Diceware Demo</title>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js" type="application/javascript"></script>
+        <script src="/js/diceware/diceware.js"></script>
+        <script>
+            if (window.crypto && window.crypto.getRandomValues) {
+                dw = new Diceware();
+                dw.load("/js/diceware/diceware.wordlist.asc", function() {
+                    $("#suggest_pw").html("Generate Passphrase").on('click', function(e) {
+                        var _newPW = dw.getWords(8).join(' ');
+                        if (confirm("Use this as your new password?\n" + _newPW + "\n\n(If 'Yes', write it down then press OK.)")) {
+                            $("#txtNewPassword").val(_newPW);
+                            testPassword();
+                        }
+                    });
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <h2>Diceware.js Demo</h2>
+        <form method="post">
+            Enter a new password:
+            <input type="text" name="password" id="txtNewPassword" size="40" />
+            <button id="suggest_pw" type="button">Loading Diceware&hellip;</button>
+            <br />
+            <button>
+                Save Passphrase
+            </button>
+        </form>
+    </body>
+</html>
