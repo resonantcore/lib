@@ -6,4 +6,4 @@ Feel free to fork, reuse, and modify to your heart's content.
 
 **Our library, like our framework, is meant for PHP 5.6 and newer**
 
-Also, check the (Wiki)[https://github.com/resonantcore/lib/wiki].
+Also, check the [Wiki](https://github.com/resonantcore/lib/wiki).
