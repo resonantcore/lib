@@ -1,6 +1,7 @@
 <?php
 
 namespace Resonantcore\Lib\Security;
+use \Resonantcore\Lib as Resonant;
 
 # Copyright (c) 2014 Resonant Core, LLC. All rights reserved.
 # Written by Scott Arciszewski
@@ -35,7 +36,7 @@ abstract class SafeAES
         $block_size = self::getBlockSize(\strlen($_eKey));
 
         // Let's generate an IV
-        $_iv = Framework\Secure::random($block_size);
+        $_iv = Resonant\Secure::random($block_size);
         if ($_iv === false) {
             throw new \Exception("Random number generator failure!");
         }
@@ -111,7 +112,7 @@ abstract class SafeAES
         $_mac = \base64_decode($hmac);
 
         // Let's check our MAC
-        if (!Framework\Secure::compare($_mac, \hash_hmac($cf['hmac_algo'], $_cipher, $_aKey, true))) {
+        if (!Resonant\Secure::compare($_mac, \hash_hmac($cf['hmac_algo'], $_cipher, $_aKey, true))) {
             throw new \Exception("MAC validation failed!");
         }
 
