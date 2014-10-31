@@ -143,6 +143,7 @@ abstract class SAFE
     {
         switch ($version) {
             case 'A0':
+            case 'A1':
                 return [
                     'block_mode' => MCRYPT_MODE_CBC,
                     'cipher' => 'aes',
