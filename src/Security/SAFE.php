@@ -7,14 +7,14 @@ use \Resonantcore\Lib as Resonant;
 # Written by Scott Arciszewski
 
 /**
- * Symmetric Authenticated & Fast Encryption using AES
+ * Symmetric Authenticated & Fast Encryption
  *
  * Summary: AES-128-CBC + HMAC-SHA-256, random IV, PBKDF2 if a separate key is provided.
  */
-abstract class SafeAES
+abstract class SAFE
 {
     const SEPARATOR = ':';
-    const VERSION = 'A0';
+    const VERSION = 'A1';
 
     /**
      * Encrypt a message.
@@ -52,7 +52,7 @@ abstract class SafeAES
         // Compute HMAC
         $_mac = \hash_hmac(
             $cf['hmac_algo'],
-            $_cipher,
+            $_iv . $_cipher,
             $_aKey,
             true
         );
@@ -112,7 +112,7 @@ abstract class SafeAES
         $_mac = \base64_decode($hmac);
 
         // Let's check our MAC
-        if (!Resonant\Secure::compare($_mac, \hash_hmac($cf['hmac_algo'], $_cipher, $_aKey, true))) {
+        if (!Resonant\Secure::compare($_mac, \hash_hmac($cf['hmac_algo'], $_iv . $_cipher, $_aKey, true))) {
             throw new \Exception("MAC validation failed!");
         }
 
