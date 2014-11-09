@@ -14,7 +14,7 @@ use \Resonantcore\Lib as Resonant;
 abstract class SAFE
 {
     const SEPARATOR = ':';
-    const VERSION = 'A1';
+    const VERSION = 'A2';
 
     /**
      * Encrypt a message.
@@ -62,7 +62,7 @@ abstract class SAFE
             self::VERSION,
             \base64_encode($_iv),
             \base64_encode($_cipher),
-            \base64_encode($_mac)
+            \bin2hex($_mac)
         ]);
     }
 
@@ -109,10 +109,22 @@ abstract class SAFE
         // Decode the paramaters
         $_iv = \base64_decode($iv);
         $_cipher = \base64_decode($cipher);
-        $_mac = \base64_decode($hmac);
+        switch ($version) {
+            case 'A0':
+            case 'A1':
+                $_mac = \base64_decode($hmac);
+                break;
+            case 'A2':
+                $_mac = \hex2bin($hmac);
+                break;
+        }
 
         // Let's check our MAC
-        if (!Resonant\Secure::compare($_mac, \hash_hmac($cf['hmac_algo'], $_iv . $_cipher, $_aKey, true))) {
+        if (!Resonant\Secure::compare(
+            $_mac,
+            \hash_hmac($cf['hmac_algo'], $_iv . $_cipher, $_aKey, true)
+            )
+        ) {
             throw new \Exception("MAC validation failed!");
         }
 
@@ -144,6 +156,7 @@ abstract class SAFE
         switch ($version) {
             case 'A0':
             case 'A1':
+            case 'A2':
                 return [
                     'block_mode' => MCRYPT_MODE_CBC,
                     'cipher' => 'aes',
@@ -257,7 +270,7 @@ abstract class SAFE
     protected static function removePadding($plaintext)
     {
         $l = \strlen($plaintext) - ord($plaintext[\strlen($plaintext) - 1]);
-		return \substr($plaintext, 0, $l);
+        return \substr($plaintext, 0, $l);
     }
 
     private static function encryptOnly($plaintext, $key, $iv, $mode, $version = self::VERSION)
