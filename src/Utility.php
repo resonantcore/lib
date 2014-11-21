@@ -6,7 +6,7 @@ class Utility
     public static function getJSON($file)
     {
         if (\is_readable($file)) {
-            return self::parseJSON(\file_get_contents($file));
+            return self::parseJSON(\file_get_contents($file), true);
         }
     }
 
