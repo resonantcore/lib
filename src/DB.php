@@ -4,6 +4,17 @@ namespace Resonantcore\Lib;
 class DB extends \PDO
 {
     /**
+     * Variadic version of $this->single()
+     *
+     * @param string $statement SQL query without user data
+     * @params mixed ...$params Parameters
+     * @return mixed
+     */
+    public function col($statement, ...$params)
+    {
+        return self::single($statement, $params);
+    }
+    /**
      * Parameterized Query
      *
      * @param string $statement
@@ -28,9 +39,85 @@ class DB extends \PDO
         return false;
     }
 
+    /**
+     * Insert a new row to a table in a database.
+     *
+     * @param string $table - table name
+     * @param array $changes - associative array of which values should be assigned to each field
+     * @param array $conditions - WHERE clause
+     */
+    public function insert($table, array $map)
+    {
+        if (empty($map)) {
+            return null;
+        }
+        $queryString = "INSERT INTO " . $table . " (";
+            $queryString .= \implode(', ', \array_keys($map));
+        $queryString .= ") VALUES (";
+            $queryString .= \implode(', ', \array_fill(0, \count($map), '?'));
+        $queryString .= ");";
+        return $this->dbQuery($queryString, \array_values($map));
+    }
+
+    /**
+     * Iterate through every row in a table, executing a callback for each row
+     *
+     * @param string $table - Name of the table to operate on
+     * @param function $func - Execute this on every row
+     * @param string $sortby - Which clumn to sort by
+     * @param boolean $descending - Should we sort up or down?
+     */
+    public function iterate($table, callable $func, $select = '*', $sortby = null, $descending = false)
+    {
+        $dir = $descending ? 'DESC' : 'ASC';
+        $query = "SELECT {$select} FROM " . $this->sanitize($table) .
+                ( !empty($sortby)
+                    ? " ORDER BY ".$this->sanitize($sortby).' '.$dir
+                    : ""
+                );
+        $result = $this->dbQuery($query);
+        if (empty($result)) {
+            return false;
+        }
+        foreach($result as $row) {
+            $func($row);
+        }
+    }
+
+    /**
+     * PHP 5.6 variadic shorthand for $this->dbQuery()
+     *
+     * @param string $statement SQL query without user data
+     * @params mixed ...$params Parameters
+     */
     public function q($statement, ...$params)
     {
         return self::dbQuery($statement, $params);
+    }
+
+    /**
+     * Similar to $this->q() except it only returns a single row
+     *
+     * @param string $statement SQL query without user data
+     * @params mixed ...$params Parameters
+     */
+    public function row($statement, ...$params)
+    {
+        $result = self::dbQuery($statement, $params);
+        if (\is_array($result)) {
+            return \array_shift($result);
+        }
+        return [];
+    }
+
+    /**
+     * Manually escape data for insertion into an SQL query (NOT RECOMMENDED!)
+     * @param string $string input string
+     * @return string
+     */
+    public function sanitize($string)
+    {
+        return \substr($this->quote($string), 1, -1);
     }
 
     /**
@@ -51,32 +138,32 @@ class DB extends \PDO
     }
 
     /**
-     * Iterate through every row in a table, executing a callback for each row
+     * Update a row in a database table.
      *
-     * @param string $table - Name of the table to operate on
-     * @param function $func - Execute this on every row
-     * @param string $sortby - Which clumn to sort by
-     * @param boolean $descending -
+     * @param string $table - table name
+     * @param array $changes - associative array of which values should be assigned to each field
+     * @param array $conditions - WHERE clause
      */
-    public function iterate($table, callable $func, $select = '*', $sortby = null, $descending = false)
+    public function update($table, array $changes, array $conditions)
     {
-        $dir = $descending ? 'DESC' : 'ASC';
-        $query = "SELECT {$select} FROM " . $this->sanitize($table) .
-                ( !empty($sortby)
-                    ? " ORDER BY ".$this->sanitize($sortby).' '.$dir
-                    : ""
-                );
-        $result = $this->dbQuery($query);
-        if (empty($result)) {
-            return false;
+        if (empty($changes) || empty($conditions)) {
+            return null;
         }
-        foreach($result as $row) {
-            $func($row);
+        $queryString = "UPDATE " . $table . " SET ";
+        $pre = [];
+        foreach ($changes as $i => $v) {
+            $pre []= " {$i} = ?";
+            $params[] = $v;
         }
-    }
+        $queryString .= \implode(', ', $pre);
+        $queryString .= " WHERE ";
+        $post = [];
+        foreach ($conditions as $i => $v) {
+            $post []= " {$i} = ? ";
+            $params[] = $v;
+        }
+        $queryString .= \implode(' AND ', $post);
 
-    public function sanitize($string)
-    {
-        return \substr($this->quote($string), 1, -1);
+        return $this->dbQuery($queryString, $params);
     }
 }
