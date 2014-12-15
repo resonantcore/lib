@@ -52,7 +52,11 @@ class DB extends \PDO
             return null;
         }
         $queryString = "INSERT INTO " . $table . " (";
-            $queryString .= \implode(', ', \array_keys($map));
+            $keys = \array_keys($map);
+            foreach ($keys as $i => $v) {
+                $keys[$i] = $this->sanitize($v);
+            }
+            $queryString .= \implode(', ', $keys);
         $queryString .= ") VALUES (";
             $queryString .= \implode(', ', \array_fill(0, \count($map), '?'));
         $queryString .= ");";
@@ -152,6 +156,7 @@ class DB extends \PDO
         $queryString = "UPDATE " . $table . " SET ";
         $pre = [];
         foreach ($changes as $i => $v) {
+            $i = $this->sanitize($i);
             $pre []= " {$i} = ?";
             $params[] = $v;
         }
