@@ -12,7 +12,6 @@
                         var _newPW = dw.getWords(8).join(' ');
                         if (confirm("Use this as your new password?\n" + _newPW + "\n\n(If 'Yes', write it down then press OK.)")) {
                             $("#txtNewPassword").val(_newPW);
-                            testPassword();
                         }
                     });
                 });
