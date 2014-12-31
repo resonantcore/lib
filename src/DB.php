@@ -61,6 +61,9 @@ class DB extends \PDO
     public function escape_identifier($str, $quote = true)
     {
         $str = \preg_replace('/[^0-9a-zA-Z_]/', '', $str);
+        if (!\preg_match('/^[a-zA-Z_]', $str)) {
+            throw new \PDOException("Invalid identifier: Must begin with a letter or undescore.");
+        }
         if ($quote) {
             switch ($this->dbengine) {
                 case 'mssql':
