@@ -1,11 +1,11 @@
 <?php
-
 namespace Resonantcore\Lib\Security;
 
 class CSRF
 {
     const FORM_INDEX = '_CSRF_INDEX';
     const FORM_TOKEN = '_CSRF_TOKEN';
+    const SESSION_INDEX = 'CSRF';
     const HASH_ALGO = 'sha256';
     const RECYCLE_AFTER = 100;
 
@@ -20,17 +20,13 @@ class CSRF
     public static function insert_token($echo = true)
     {
         $ret = '';
-        if (!isset($_SESSION['CSRF'])) {
-            $_SESSION['CSRF'] = [];
+        if (!isset($_SESSION[self::SESSION_INDEX])) {
+            $_SESSION[self::SESSION_INDEX] = [];
         }
 
         list($index, $token) = self::_generateToken();
 
-        $ret .= "<!--\n--><input ".
-            "type=\"hidden\" ".
-            "name=\"".self::FORM_INDEX."\" ".
-            "value=\"".XSS::clean($index)."\" ".
-        "/>";
+        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_INDEX."\" value=\"".XSS::clean($index)."\" />";
 
         if (self::$hmac_ip !== false) {
             // Use HMAC to only allow this particular IP to send this request
@@ -45,11 +41,7 @@ class CSRF
         }
 
 
-        $ret .= "<!--\n--><input ".
-            "type=\"hidden\" ".
-            "name=\"".self::FORM_TOKEN."\" ".
-            "value=\"".XSS::clean($token)."\" ".
-        "/>";
+        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_TOKEN."\" value=\"".XSS::clean($token)."\" />";
         if ($echo) {
             echo $ret;
             return '';
@@ -63,8 +55,8 @@ class CSRF
      */
     public static function validate_request()
     {
-        if (!isset($_SESSION['CSRF'])) {
-            $_SESSION['CSRF'] = [];
+        if (!isset($_SESSION[self::SESSION_INDEX])) {
+            $_SESSION[self::SESSION_INDEX] = [];
             return false;
         }
 
@@ -75,11 +67,11 @@ class CSRF
         $index = $_POST[self::FORM_INDEX];
         $token = $_POST[self::FORM_TOKEN];
 
-        if (!isset($_SESSION['CSRF'][$index])) {
+        if (!isset($_SESSION[self::SESSION_INDEX][$index])) {
             // CSRF Token not found
             return false;
         }
-        $stored = $_SESSION['CSRF'][$index];
+        $stored = $_SESSION[self::SESSION_INDEX][$index];
 
         // This is the expected token value
         if (self::$hmac_ip === false) {
@@ -95,10 +87,10 @@ class CSRF
             );
         }
         if (\Resonantcore\Lib\Secure::compare($token, $expected)) {
-            unset($_SESSION['CSRF'][$index]);
+            unset($_SESSION[self::SESSION_INDEX][$index]);
             return true;
         } else {
-            unset($_SESSION['CSRF'][$index]);
+            unset($_SESSION[self::SESSION_INDEX][$index]);
             return false;
         }
 
@@ -111,10 +103,10 @@ class CSRF
      */
     protected static function _generateToken()
     {
-        $index = \base64_encode(\Resonantcore\Lib\Secure::random(18));
-        $token = \base64_encode(\Resonantcore\Lib\Secure::random(32));
+        $index = \base64_encode(\Resonantcore\Lib\Secure::random_bytes(18));
+        $token = \base64_encode(\Resonantcore\Lib\Secure::random_bytes(32));
 
-        $_SESSION['CSRF'][$index] = [
+        $_SESSION[self::SESSION_INDEX][$index] = [
             'created' => \intval(\date('YmdHis')),
             'uri' => $_SERVER['REQUEST_URI'],
             'token' => $token
@@ -130,12 +122,14 @@ class CSRF
      */
     protected static function _recycleTokens()
     {
-        \uasort($_SESSION['CSRF'], function($a, $b) {
+        // Sort by creation time
+        \uasort($_SESSION[self::SESSION_INDEX], function($a, $b) {
             return $a['created'] - $b['created'];
         });
-        if (\count($_SESSION['CSRF']) > self::RECYCLE_AFTER) {
+
+        if (\count($_SESSION[self::SESSION_INDEX]) > self::RECYCLE_AFTER) {
             // Let's knock off the oldest one
-            \array_shift($_SESSION['CSRF']);
+            \array_shift($_SESSION[self::SESSION_INDEX]);
         }
     }
 }

@@ -1,5 +1,4 @@
 <?php
-
 spl_autoload_register(function($class) {
     // does the class use the namespace prefix?
     $namespace = 'Resonantcore\\Lib\\';

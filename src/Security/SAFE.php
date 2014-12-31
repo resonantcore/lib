@@ -1,6 +1,6 @@
 <?php
-
 namespace Resonantcore\Lib\Security;
+
 use \Resonantcore\Lib as Resonant;
 
 # Copyright (c) 2014 Resonant Core, LLC. All rights reserved.
@@ -36,7 +36,7 @@ abstract class SAFE
         $block_size = self::getBlockSize(\strlen($_eKey));
 
         // Let's generate an IV
-        $_iv = Resonant\Secure::random($block_size);
+        $_iv = Resonant\Secure::random_bytes($block_size);
         if ($_iv === false) {
             throw new \Exception("Random number generator failure!");
         }

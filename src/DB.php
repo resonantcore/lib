@@ -68,16 +68,17 @@ class DB extends \PDO
         
         // The first character cannot be [0-9]:
         if (\preg_match('/^[0-9]/', $str)) {
-            throw new \PDOException("Invalid identifier: Must begin with a letter or undescore.");
+            // FATAL ERROR
+            \trigger_error("Invalid identifier: Must begin with a letter or undescore.", E_USER_ERROR);
         }
         if ($quote) {
             switch ($this->dbengine) {
                 case 'mssql':
-                    return '[' . $str . ']';
+                    return '['.$str.']';
                 case 'mysql':
-                    return '`' . $str . '`';
+                    return '`'.$str.'`';
                 default:
-                    return '"' . $str . '"';
+                    return '"'.$str.'"';
             }
         }
         return $str;
@@ -95,17 +96,29 @@ class DB extends \PDO
         if (empty($map)) {
             return null;
         }
-        $queryString = "INSERT INTO " . $this->escape_identifier($table) . " (";
         
-            // Let's make sure our keys are escaped.
-            $keys = \array_keys($map);
-            foreach ($keys as $i => $v) {
-                $keys[$i] = $this->escape_identifier($v);
-            }
-            $queryString .= \implode(', ', $keys);
+        // Begin query string
+        $queryString = "INSERT INTO ".$this->escape_identifier($table)." (";
+
+        // Let's make sure our keys are escaped.
+        $keys = \array_keys($map);
+        foreach ($keys as $i => $v) {
+            $keys[$i] = $this->escape_identifier($v);
+        }
+
+        // Now let's append a list of our columns.
+        $queryString .= \implode(', ', $keys);
+
+        // This is the middle piece.
         $queryString .= ") VALUES (";
-            $queryString .= \implode(', ', \array_fill(0, \count($map), '?'));
+
+        // Now let's concatenate the ? placeholders
+        $queryString .= \implode(', ', \array_fill(0, \count($map), '?'));
+
+        // Necessary to close the open ( above
         $queryString .= ");";
+
+        // Now let's run a query with the parameters
         return $this->dbQuery($queryString, \array_values($map));
     }
 
@@ -120,11 +133,13 @@ class DB extends \PDO
     public function iterate($table, callable $func, $select = '*', $sortby = null, $descending = false)
     {
         $dir = $descending ? 'DESC' : 'ASC';
-        $query = "SELECT {$select} FROM " . $this->escape_identifier($table) .
-                ( !empty($sortby)
-                    ? " ORDER BY ".$this->escape_identifier($sortby).' '.$dir
-                    : ""
-                );
+        $query = "SELECT {$select} FROM ".$this->escape_identifier($table)." ";
+
+        if (!empty($sortby)) {
+            $query .= " ORDER BY ".$this->escape_identifier($sortby).' '.$dir;
+        }
+
+            $this->escape_identifier($table);
         $result = $this->dbQuery($query);
         if (empty($result)) {
             return false;
@@ -199,7 +214,7 @@ class DB extends \PDO
         if (empty($changes) || empty($conditions)) {
             return null;
         }
-        $queryString = "UPDATE " . $this->escape_identifier($table) . " SET ";
+        $queryString = "UPDATE ".$this->escape_identifier($table)." SET ";
         
         // The first set (pre WHERE)
         $pre = [];

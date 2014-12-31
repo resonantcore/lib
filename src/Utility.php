@@ -3,17 +3,33 @@ namespace Resonantcore\Lib;
 
 class Utility
 {
+    /**
+     * Read a JSON file, return its contents as an array
+     *
+     * @param string $file file name
+     * @return mixed (array on success, null on failure)
+     */
     public static function getJSON($file)
     {
         if (\is_readable($file)) {
             return self::parseJSON(\file_get_contents($file), true);
         }
+        return null;
     }
 
+    /**
+     * Parser for JSON with comments
+     *
+     * @param string $json JSON text
+     * @param boolean $assoc Return as an associative array?
+     * @param int $depth Maximum depth
+     * @param int $options options
+     * @return mixed
+     */
     public static function parseJSON($json, $assoc = false, $depth = 512, $options = 0)
     {
-        return json_decode(
-            preg_replace(
+        return \json_decode(
+            \preg_replace(
                 "#(/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/)|([\s\t]//.*)|(^//.*)#",
                 '',
                 $json
