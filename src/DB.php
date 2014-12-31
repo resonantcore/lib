@@ -208,6 +208,7 @@ class DB extends \PDO
         $queryString .= " WHERE ";
         $post = [];
         foreach ($conditions as $i => $v) {
+            $i = $this->escape_identifier($i);
             $post []= " {$i} = ? ";
             $params[] = $v;
         }
