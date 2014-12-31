@@ -3,6 +3,16 @@ namespace Resonantcore\Lib;
 
 class DB extends \PDO
 {
+    public $dbengine = null;
+    
+    public function __construct($dsn, $username, $password, $options = [])
+    {
+        if (strpos($dsn, ':') !== false) {
+            $this->dbengine = explode(':', $dsn)[0];
+        }
+        parent::__construct($dsn, $username, $password, $options);
+    }
+    
     /**
      * Variadic version of $this->single()
      *
@@ -38,6 +48,31 @@ class DB extends \PDO
         }
         return false;
     }
+    
+    /**
+     * Make sure only valid characters make it in column/table names
+     * 
+     * @ref https://stackoverflow.com/questions/10573922/what-does-the-sql-standard-say-about-usage-of-backtick
+     * 
+     * @param string $str - column name
+     * @param boolean $quote - certain SQLs escape column names (i.e. mysql with `backticks`)
+     * @return string
+     */
+    public function escape_identifier($str, $quote = true)
+    {
+        $str = \preg_replace('/[^0-9a-zA-Z_]/', '', $str);
+        if ($quote) {
+            switch ($this->dbengine) {
+                case 'mssql':
+                    return '[' . $str . ']';
+                case 'mysql':
+                    return '`' . $str . '`';
+                default:
+                    return '"' . $str . '"';
+            }
+        }
+        return $str;
+    }
 
     /**
      * Insert a new row to a table in a database.
@@ -51,10 +86,10 @@ class DB extends \PDO
         if (empty($map)) {
             return null;
         }
-        $queryString = "INSERT INTO " . $table . " (";
+        $queryString = "INSERT INTO " . $this->escape_identifier($table) . " (";
             $keys = \array_keys($map);
             foreach ($keys as $i => $v) {
-                $keys[$i] = $this->sanitize($v);
+                $keys[$i] = $this->sanitize($this->escape_identifier($v));
             }
             $queryString .= \implode(', ', $keys);
         $queryString .= ") VALUES (";
@@ -153,10 +188,10 @@ class DB extends \PDO
         if (empty($changes) || empty($conditions)) {
             return null;
         }
-        $queryString = "UPDATE " . $table . " SET ";
+        $queryString = "UPDATE " . $this->escape_identifier($table) . " SET ";
         $pre = [];
         foreach ($changes as $i => $v) {
-            $i = $this->sanitize($i);
+            $i = $this->sanitize($this->escape_identifier($i));
             $pre []= " {$i} = ?";
             $params[] = $v;
         }
