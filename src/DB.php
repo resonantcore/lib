@@ -112,9 +112,9 @@ class DB extends \PDO
     public function iterate($table, callable $func, $select = '*', $sortby = null, $descending = false)
     {
         $dir = $descending ? 'DESC' : 'ASC';
-        $query = "SELECT {$select} FROM " . $this->sanitize($table) .
+        $query = "SELECT {$select} FROM " . $this->escape_identifier($table) .
                 ( !empty($sortby)
-                    ? " ORDER BY ".$this->sanitize($sortby).' '.$dir
+                    ? " ORDER BY ".$this->escape_identifier($sortby).' '.$dir
                     : ""
                 );
         $result = $this->dbQuery($query);
