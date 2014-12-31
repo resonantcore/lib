@@ -60,6 +60,9 @@ class DB extends \PDO
      */
     public function escape_identifier($str, $quote = true)
     {
+        // Force UTF-8
+        $str = \Resonantcore\Lib\Utility::toUTF8($str);
+
         // Strip out invalid characters
         $str = \preg_replace('/[^0-9a-zA-Z_]/', '', $str);
         
