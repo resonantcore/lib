@@ -92,7 +92,7 @@ class DB extends \PDO
         $queryString = "INSERT INTO " . $this->escape_identifier($table) . " (";
             $keys = \array_keys($map);
             foreach ($keys as $i => $v) {
-                $keys[$i] = $this->sanitize($this->escape_identifier($v));
+                $keys[$i] = $this->escape_identifier($v);
             }
             $queryString .= \implode(', ', $keys);
         $queryString .= ") VALUES (";
@@ -194,7 +194,7 @@ class DB extends \PDO
         $queryString = "UPDATE " . $this->escape_identifier($table) . " SET ";
         $pre = [];
         foreach ($changes as $i => $v) {
-            $i = $this->sanitize($this->escape_identifier($i));
+            $i = $this->escape_identifier($i);
             $pre []= " {$i} = ?";
             $params[] = $v;
         }
