@@ -60,8 +60,11 @@ class DB extends \PDO
      */
     public function escape_identifier($str, $quote = true)
     {
+        // Strip out invalid characters
         $str = \preg_replace('/[^0-9a-zA-Z_]/', '', $str);
-        if (!\preg_match('/^[a-zA-Z_]/', $str)) {
+        
+        // The first character cannot be [0-9]:
+        if (\preg_match('/^[0-9]/', $str)) {
             throw new \PDOException("Invalid identifier: Must begin with a letter or undescore.");
         }
         if ($quote) {
