@@ -96,6 +96,8 @@ class DB extends \PDO
             return null;
         }
         $queryString = "INSERT INTO " . $this->escape_identifier($table) . " (";
+        
+            // Let's make sure our keys are escaped.
             $keys = \array_keys($map);
             foreach ($keys as $i => $v) {
                 $keys[$i] = $this->escape_identifier($v);
@@ -198,6 +200,8 @@ class DB extends \PDO
             return null;
         }
         $queryString = "UPDATE " . $this->escape_identifier($table) . " SET ";
+        
+        // The first set (pre WHERE)
         $pre = [];
         foreach ($changes as $i => $v) {
             $i = $this->escape_identifier($i);
@@ -206,6 +210,8 @@ class DB extends \PDO
         }
         $queryString .= \implode(', ', $pre);
         $queryString .= " WHERE ";
+        
+        // The last set (post WHERE)
         $post = [];
         foreach ($conditions as $i => $v) {
             $i = $this->escape_identifier($i);
