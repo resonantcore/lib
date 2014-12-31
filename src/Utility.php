@@ -50,8 +50,20 @@ class Utility
     public static function toUTF8($string, $from_type = null)
     {
         if (empty($from_type)) {
-            $from_type = \mb_detect_encoding($string);
-            if ($from_type === 'UTF-8') {
+            $from_type = \mb_detect_encoding($string, 'auto');
+            if ($from_type === false) {
+
+                // Let's get rid of all non-UTF8 chars
+                return \preg_replace(
+                    '/[\x00-\x08\x10\x0B\x0C\x0E-\x19\x7F]'.
+                        '|[\x00-\x7F][\x80-\xBF]+'.
+                        '|([\xC0\xC1]|[\xF0-\xFF])[\x80-\xBF]*'.
+                        '|[\xC2-\xDF]((?![\x80-\xBF])|[\x80-\xBF]{2,})'.
+                        '|[\xE0-\xEF](([\x80-\xBF](?![\x80-\xBF]))|(?![\x80-\xBF]{2})|[\x80-\xBF]{3,})/S',
+                    '?',
+                    $string
+                );
+            } elseif ($from_type === 'UTF-8') {
                 // No operation needed...
                 return $string;
             }

@@ -120,11 +120,10 @@ abstract class SAFE
         }
 
         // Let's check our MAC
-        if (!Resonant\Secure::compare(
+        if (!\hash_equals(
             $_mac,
             \hash_hmac($cf['hmac_algo'], $_iv . $_cipher, $_aKey, true)
-            )
-        ) {
+        )) {
             throw new \Exception("MAC validation failed!");
         }
 

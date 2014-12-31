@@ -10,7 +10,14 @@ class DB extends \PDO
         if (strpos($dsn, ':') !== false) {
             $this->dbengine = explode(':', $dsn)[0];
         }
+        // If no charset is specified, default to UTF-8
+        if (strpos($dsn, ';charset=') === false) {
+            $dsn .= ';charset=utf8';
+        }
         parent::__construct($dsn, $username, $password, $options);
+
+        // Let's turn off emulated prepares
+        $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     }
     
     /**
@@ -24,6 +31,7 @@ class DB extends \PDO
     {
         return self::single($statement, $params);
     }
+
     /**
      * Parameterized Query
      *

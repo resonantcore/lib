@@ -18,11 +18,28 @@ abstract class Secure
         if ($range < 2) {
             return $min;
         }
-        $rem = (PHP_INT_MAX - $range + 1) % $range;
+
+        // 7776 -> 13
+        $bits = ceil(log($range)/log(2));
+
+        // 2^13 - 1 == 8191 or 0x00001111 11111111
+        $mask =  ceil(pow(2, $bits)) - 1;
         do {
+            // Grab a random integer
             $val = self::random_positive_int();
-        } while ($val > $rem);
-        return (int) ($min + $val % $range);
+            if ($val === FALSE) {
+                // RNG failure
+                return FALSE;
+            }
+            // Apply mask
+            $val = $val & $mask;
+
+            // If $val is larger than the maximum acceptable number for
+            // $min and $max, we discard and try again.
+
+        } while ($val > $range);
+
+        return (int) ($min + $val);
     }
 
     /**
