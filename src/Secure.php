@@ -112,6 +112,7 @@ abstract class Secure
                 return true;
             }
         } while ($dir);
+        return false;
     }
 
     /**

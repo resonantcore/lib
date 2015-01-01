@@ -147,7 +147,6 @@ class DB extends \PDO
             $query .= " ORDER BY ".$this->escape_identifier($sortby).' '.$dir;
         }
 
-            $this->escape_identifier($table);
         $result = $this->dbQuery($query);
         if (empty($result)) {
             return false;
