@@ -7,17 +7,34 @@ class DB extends \PDO
     
     public function __construct($dsn, $username, $password, $options = [])
     {
+        $post_query = null;
+
+        // Let's grab the DB engine
         if (strpos($dsn, ':') !== false) {
             $this->dbengine = explode(':', $dsn)[0];
         }
+
         // If no charset is specified, default to UTF-8
-        if (strpos($dsn, ';charset=') === false) {
-            $dsn .= ';charset=utf8';
+        switch ($this->dbengine) {
+            case 'mysql':
+                if (strpos($dsn, ';charset=') === false) {
+                    $dsn .= ';charset=utf8';
+                }
+                break;
+            case 'pgsql':
+                $post_query = 'SET NAMES UNICODE';
+                break;
         }
+
+        // Let's call the parent constructor now
         parent::__construct($dsn, $username, $password, $options);
 
         // Let's turn off emulated prepares
         $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
+        if (!empty($post_query)) {
+            $this->query($post_query);
+        }
     }
     
     /**
@@ -104,7 +121,7 @@ class DB extends \PDO
         if (empty($map)) {
             return null;
         }
-        
+
         // Begin query string
         $queryString = "INSERT INTO ".$this->escape_identifier($table)." (";
 
