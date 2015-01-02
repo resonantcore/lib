@@ -38,13 +38,54 @@ class DB extends \PDO
     }
     
     /**
+     * Variadic version of $this->column()
+     *
+     * @param string $statement SQL query without user data
+     * @param int $offset - How many columns from the left are we grabbing from each row?
+     * @params ... $params Parameters
+     * @return mixed
+     */
+    public function col($statement, ...$params)
+    {
+        return self::column($statement, $params);
+    }
+    
+    /**
+     * Fetch a column
+     * 
+     * @param string $statement SQL query without user data
+     * @param int $offset - How many columns from the left are we grabbing from each row?
+     * @params ... $params Parameters
+     * @return mixed
+     */
+    public function column($statement, $params = [], $offset = 0)
+    {
+        // This array accumulates our results
+        $columns = [];
+        
+        $stmt = $this->prepare($statement);
+        $exec = $stmt->execute($params);
+        if ($exec) {
+            do {
+                $curr = $stmt->fetchColumn($offset);
+                if ($curr === false) {
+                    break;
+                }
+                $columns[] = $curr;
+            } while($curr !== false);
+            return $curr;
+        }
+        return false;
+    }
+    
+    /**
      * Variadic version of $this->single()
      *
      * @param string $statement SQL query without user data
      * @params mixed ...$params Parameters
      * @return mixed
      */
-    public function col($statement, ...$params)
+    public function cell($statement, ...$params)
     {
         return self::single($statement, $params);
     }
@@ -75,27 +116,55 @@ class DB extends \PDO
     }
     
     /**
+     * Delete rows in a database table.
+     *
+     * @param string $table - table name
+     * @param array $conditions - WHERE clause
+     */
+    public function delete($table, array $conditions)
+    {
+        if (empty($changes) || empty($conditions)) {
+            return null;
+        }
+        $queryString = "DELETE FROM ".$this->escapeIdentifier($table)." WHERE ";
+        
+        // Simple array for joining the strings together
+        $arr = [];
+        foreach ($conditions as $i => $v) {
+            $i = $this->escapeIdentifier($i);
+            $arr []= " {$i} = ? ";
+            $params[] = $v;
+        }
+        $queryString .= \implode(' AND ', $arr);
+
+        return $this->dbQuery($queryString, $params);
+    }
+    
+    /**
      * Make sure only valid characters make it in column/table names
      * 
      * @ref https://stackoverflow.com/questions/10573922/what-does-the-sql-standard-say-about-usage-of-backtick
      * 
-     * @param string $str - column name
+     * @param string $string - table or column name
      * @param boolean $quote - certain SQLs escape column names (i.e. mysql with `backticks`)
      * @return string
      */
-    public function escape_identifier($str, $quote = true)
+    public function escapeIdentifier($string, $quote = true)
     {
         // Force UTF-8
-        $str = \Resonantcore\Lib\Utility::toUTF8($str);
-
         // Strip out invalid characters
-        $str = \preg_replace('/[^0-9a-zA-Z_]/', '', $str);
+        $str = \preg_replace(
+            '/[^0-9a-zA-Z_]/',
+            '',
+            \Resonantcore\Lib\Utility::toUTF8($string)
+        );
         
         // The first character cannot be [0-9]:
         if (\preg_match('/^[0-9]/', $str)) {
             // FATAL ERROR
             \trigger_error("Invalid identifier: Must begin with a letter or undescore.", E_USER_ERROR);
         }
+        
         if ($quote) {
             switch ($this->dbengine) {
                 case 'mssql':
@@ -110,11 +179,67 @@ class DB extends \PDO
     }
 
     /**
+     * Iterate through every row in a table, executing a callback for each row
+     *
+     * @param string $table - Name of the table to operate on
+     * @param function $func - Execute this on every row
+     * @param array $where - Conditions on the SELECT query
+     * @param string $sortby - Which clumn to sort by
+     * @param boolean $descending - Should we sort up or down?
+     * @return array
+     */
+    public function forEachRow(
+        $table,
+        callable $func,
+        $select = '*',
+        $where = null,
+        $sortby = null,
+        $descending = false
+    ) {
+        $dir = $descending ? 'DESC' : 'ASC';
+        $query = "SELECT {$select} FROM ".$this->escapeIdentifier($table)." ";
+        
+        // If $where is provided, we'll use this.
+        $queryParams = [];
+        
+        if (!empty($where)) {
+            if (is_string($where)) {
+                // Boring!
+                $query .= " WHERE " . $where;
+            } elseif (is_array($where)) {
+                $query .= " WHERE ";
+                $conditions = [];
+                foreach ($where as $key => $value) {
+                    // Add a placeholder
+                    $conditions[] = $this->escapeIdentifier($key).' = ?';
+                    // Append this value
+                    $queryParams[] = $value;
+                }
+                $query .= \implode(' AND ', $conditions);
+            }
+        }
+        
+        // How should we sort the data?
+        if (!empty($sortby)) {
+            $query .= " ORDER BY ".$this->escapeIdentifier($sortby).' '.$dir;
+        }
+
+        $result = $this->dbQuery($query, $queryParams);
+        if (empty($result)) {
+            // No results!
+            return false;
+        }
+        foreach($result as $i => $row) {
+            $result[$i] = $func($row);
+        }
+        return $result;
+    }
+
+    /**
      * Insert a new row to a table in a database.
      *
      * @param string $table - table name
      * @param array $changes - associative array of which values should be assigned to each field
-     * @param array $conditions - WHERE clause
      */
     public function insert($table, array $map)
     {
@@ -123,12 +248,12 @@ class DB extends \PDO
         }
 
         // Begin query string
-        $queryString = "INSERT INTO ".$this->escape_identifier($table)." (";
+        $queryString = "INSERT INTO ".$this->escapeIdentifier($table)." (";
 
         // Let's make sure our keys are escaped.
         $keys = \array_keys($map);
         foreach ($keys as $i => $v) {
-            $keys[$i] = $this->escape_identifier($v);
+            $keys[$i] = $this->escapeIdentifier($v);
         }
 
         // Now let's append a list of our columns.
@@ -145,32 +270,6 @@ class DB extends \PDO
 
         // Now let's run a query with the parameters
         return $this->dbQuery($queryString, \array_values($map));
-    }
-
-    /**
-     * Iterate through every row in a table, executing a callback for each row
-     *
-     * @param string $table - Name of the table to operate on
-     * @param function $func - Execute this on every row
-     * @param string $sortby - Which clumn to sort by
-     * @param boolean $descending - Should we sort up or down?
-     */
-    public function iterate($table, callable $func, $select = '*', $sortby = null, $descending = false)
-    {
-        $dir = $descending ? 'DESC' : 'ASC';
-        $query = "SELECT {$select} FROM ".$this->escape_identifier($table)." ";
-
-        if (!empty($sortby)) {
-            $query .= " ORDER BY ".$this->escape_identifier($sortby).' '.$dir;
-        }
-
-        $result = $this->dbQuery($query);
-        if (empty($result)) {
-            return false;
-        }
-        foreach($result as $row) {
-            $func($row);
-        }
     }
 
     /**
@@ -198,15 +297,17 @@ class DB extends \PDO
         }
         return [];
     }
-
+    
     /**
-     * Manually escape data for insertion into an SQL query (NOT RECOMMENDED!)
-     * @param string $string input string
-     * @return string
+     * PHP 5.6 variadic shorthand for $this->dbQuery()
+     *
+     * @param string $statement SQL query without user data
+     * @params mixed ...$params Parameters
+     * @return mixed - If successful, a 2D array
      */
-    public function sanitize($string)
+    public function run($statement, ...$params)
     {
-        return \substr($this->quote($string), 1, -1);
+        return self::dbQuery($statement, $params);
     }
 
     /**
@@ -238,12 +339,12 @@ class DB extends \PDO
         if (empty($changes) || empty($conditions)) {
             return null;
         }
-        $queryString = "UPDATE ".$this->escape_identifier($table)." SET ";
+        $queryString = "UPDATE ".$this->escapeIdentifier($table)." SET ";
         
         // The first set (pre WHERE)
         $pre = [];
         foreach ($changes as $i => $v) {
-            $i = $this->escape_identifier($i);
+            $i = $this->escapeIdentifier($i);
             $pre []= " {$i} = ?";
             $params[] = $v;
         }
@@ -253,7 +354,7 @@ class DB extends \PDO
         // The last set (post WHERE)
         $post = [];
         foreach ($conditions as $i => $v) {
-            $i = $this->escape_identifier($i);
+            $i = $this->escapeIdentifier($i);
             $post []= " {$i} = ? ";
             $params[] = $v;
         }
