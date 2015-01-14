@@ -15,8 +15,8 @@ class SAFETest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             1,
             preg_match('#^' .
-                \Resonantcore\Lib\Security\SAFE::VERSION .
-                \Resonantcore\Lib\Security\SAFE::SEPARATOR .
+                \preg_quote(\Resonantcore\Lib\Security\SAFE::VERSION, '#').
+                \preg_quote(\Resonantcore\Lib\Security\SAFE::SEPARATOR, '#')
                 '#', $msg
             )
         );
