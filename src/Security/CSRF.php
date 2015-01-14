@@ -33,7 +33,9 @@ class CSRF
             $token = \base64_encode(
                 \hash_hmac(
                     self::HASH_ALGO,
-                    $_SERVER['REMOTE_ADDR'],
+                    isset($_SERVER['REMOTE_ADDR'])
+                        ? $_SERVER['REMOTE_ADDR']
+                        : '127.0.0.1',
                     \base64_decode($token),
                     true
                 )
@@ -80,7 +82,9 @@ class CSRF
             $expected = \base64_encode(
                 \hash_hmac(
                     self::HASH_ALGO,
-                    $_SERVER['REMOTE_ADDR'],
+                    isset($_SERVER['REMOTE_ADDR'])
+                        ? $_SERVER['REMOTE_ADDR']
+                        : '127.0.0.1',
                     \base64_decode($stored['token']),
                     true
                 )
@@ -108,7 +112,9 @@ class CSRF
 
         $_SESSION[self::SESSION_INDEX][$index] = [
             'created' => \intval(\date('YmdHis')),
-            'uri' => $_SERVER['REQUEST_URI'],
+            'uri' => isset($_SERVER['REQUEST_URI'])
+                ? $_SERVER['REQUEST_URI']
+                : $_SERVER['SCRIPT_NAME'],
             'token' => $token
         ];
 
