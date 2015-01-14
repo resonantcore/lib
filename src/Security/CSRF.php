@@ -86,7 +86,7 @@ class CSRF
                 )
             );
         }
-        if (\Resonantcore\Lib\Secure::compare($token, $expected)) {
+        if (\hash_equals($token, $expected)) {
             unset($_SESSION[self::SESSION_INDEX][$index]);
             return true;
         } else {
