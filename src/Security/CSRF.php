@@ -9,7 +9,7 @@ class CSRF
     const HASH_ALGO = 'sha256';
     const RECYCLE_AFTER = 100;
 
-    public $hmac_ip = true;
+    public static $hmac_ip = true;
 
     /**
      * Insert a CSRF prevention token to a form
