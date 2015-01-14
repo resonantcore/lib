@@ -26,7 +26,7 @@ class CSRF
 
         list($index, $token) = self::_generateToken();
 
-        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_INDEX."\" value=\"".XSS::clean($index)."\" />";
+        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_INDEX."\" value=\"".\Resonantcore\Lib\Secure::noHTML($index)."\" />";
 
         if (self::$hmac_ip !== false) {
             // Use HMAC to only allow this particular IP to send this request
@@ -41,7 +41,7 @@ class CSRF
         }
 
 
-        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_TOKEN."\" value=\"".XSS::clean($token)."\" />";
+        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_TOKEN."\" value=\"".\Resonantcore\Lib\Secure::noHTML($token)."\" />";
         if ($echo) {
             echo $ret;
             return '';
