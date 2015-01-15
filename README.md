@@ -6,6 +6,8 @@ This repository contains some useful libraries we developed for use in (and atte
 
 Feel free to fork, reuse, and modify to your heart's content.
 
+**COMPATIBILITY BRANCH FOR PHP 5.5**
+
 **Our library, like our framework, is meant for PHP 5.6 and newer**
 
 Also, check the [Wiki](https://github.com/resonantcore/lib/wiki).

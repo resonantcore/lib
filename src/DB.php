@@ -45,9 +45,11 @@ class DB extends \PDO
      * @params ... $params Parameters
      * @return mixed
      */
-    public function col($statement, ...$params)
+    public function col()
     {
-        return self::column($statement, $params);
+        $args = \func_get_args();
+        $statement = \array_shift($args);
+        return self::column($statement, \array_values($args));
     }
     
     /**
@@ -85,9 +87,11 @@ class DB extends \PDO
      * @params mixed ...$params Parameters
      * @return mixed
      */
-    public function cell($statement, ...$params)
+    public function cell()
     {
-        return self::single($statement, $params);
+        $args = \func_get_args();
+        $statement = \array_shift($args);
+        return self::single($statement, \array_values($args));
     }
 
     /**
@@ -278,9 +282,11 @@ class DB extends \PDO
      * @param string $statement SQL query without user data
      * @params mixed ...$params Parameters
      */
-    public function q($statement, ...$params)
+    public function q()
     {
-        return self::dbQuery($statement, $params);
+        $args = \func_get_args();
+        $statement = \array_shift($args);
+        return self::dbQuery($statement, \array_values($args));
     }
 
     /**
@@ -289,9 +295,11 @@ class DB extends \PDO
      * @param string $statement SQL query without user data
      * @params mixed ...$params Parameters
      */
-    public function row($statement, ...$params)
+    public function row()
     {
-        $result = self::dbQuery($statement, $params);
+        $args = \func_get_args();
+        $statement = \array_shift($args);
+        $result = self::dbQuery($statement, \array_values($args));
         if (\is_array($result)) {
             return \array_shift($result);
         }
@@ -305,9 +313,11 @@ class DB extends \PDO
      * @params mixed ...$params Parameters
      * @return mixed - If successful, a 2D array
      */
-    public function run($statement, ...$params)
+    public function run()
     {
-        return self::dbQuery($statement, $params);
+        $args = \func_get_args();
+        $statement = \array_shift($args);
+        return self::dbQuery($statement, \array_values($args));
     }
 
     /**

@@ -120,7 +120,7 @@ abstract class SAFE
         }
 
         // Let's check our MAC
-        if (!\hash_equals(
+        if (!Resonant\Secure::hash_equals(
             $_mac,
             \hash_hmac($cf['hmac_algo'], $_iv . $_cipher, $_aKey, true)
         )) {
