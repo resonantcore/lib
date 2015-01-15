@@ -1,6 +1,8 @@
 <?php
 namespace Resonantcore\Lib\Security;
 
+use \Resonantcore\Lib as Resonant;
+
 class CSRF
 {
     const FORM_INDEX = '_CSRF_INDEX';
@@ -26,7 +28,7 @@ class CSRF
 
         list($index, $token) = self::_generateToken();
 
-        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_INDEX."\" value=\"".\Resonantcore\Lib\Secure::noHTML($index)."\" />";
+        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_INDEX."\" value=\"".Resonant\Secure::noHTML($index)."\" />";
 
         if (self::$hmac_ip !== false) {
             // Use HMAC to only allow this particular IP to send this request
@@ -43,7 +45,7 @@ class CSRF
         }
 
 
-        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_TOKEN."\" value=\"".\Resonantcore\Lib\Secure::noHTML($token)."\" />";
+        $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_TOKEN."\" value=\"".Resonant\Secure::noHTML($token)."\" />";
         if ($echo) {
             echo $ret;
             return '';
@@ -107,8 +109,8 @@ class CSRF
      */
     protected static function _generateToken()
     {
-        $index = \base64_encode(\Resonantcore\Lib\Secure::random_bytes(18));
-        $token = \base64_encode(\Resonantcore\Lib\Secure::random_bytes(32));
+        $index = \base64_encode(Resonant\Secure::random_bytes(18));
+        $token = \base64_encode(Resonant\Secure::random_bytes(32));
 
         $_SESSION[self::SESSION_INDEX][$index] = [
             'created' => \intval(\date('YmdHis')),
