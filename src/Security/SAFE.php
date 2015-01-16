@@ -12,7 +12,7 @@ use \Resonantcore\Lib as Resonant;
 abstract class SAFE
 {
     const SEPARATOR = ':';
-    const VERSION = 'B1';
+    const VERSION = 'B2';
 
     /**
      * Encrypt a message.
@@ -171,6 +171,17 @@ abstract class SAFE
                     'pbkdf2_algo' => 'sha256',
                     'pbkdf2_iterations' => 8000
                 ];
+            case 'B2':
+                return [
+                    'driver' => 'openssl',
+                    'cipher' => 'aes',
+                    'block_mode' => 'gcm',
+                    'len_cipher_key' => 16,
+                    'hmac_algo' => 'sha256',
+                    'len_hmac_key' => 32,
+                    'pbkdf2_algo' => 'sha256',
+                    'pbkdf2_iterations' => 8000
+                ];
             default:
                 throw new \Exception("Unsupported version");
         }
@@ -266,7 +277,7 @@ abstract class SAFE
     }
 
     /**
-     * How large should our block be?
+     * How large should our block be? Used for IV size generation.
      *
      * @param int $keylen - how long is the key? (for non-AES, this returns $keylen)
      * @param string $version - which version of the config should we load?
@@ -277,6 +288,9 @@ abstract class SAFE
         switch(\strtolower($cf['cipher']))
         {
             case 'aes':
+                if ($cf['driver'] === 'openssl' && $cf['block_mode'] === 'gcm') {
+                    return 12;
+                }
                 return 16;
             default:
                 return $keylen;
