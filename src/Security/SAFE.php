@@ -8,13 +8,11 @@ use \Resonantcore\Lib as Resonant;
 
 /**
  * Symmetric Authenticated & Fast Encryption
- *
- * Summary: AES-128-CBC + HMAC-SHA-256, random IV, PBKDF2 if a separate key is provided.
  */
 abstract class SAFE
 {
     const SEPARATOR = ':';
-    const VERSION = 'A2';
+    const VERSION = 'B1';
 
     /**
      * Encrypt a message.
@@ -114,7 +112,7 @@ abstract class SAFE
             case 'A1':
                 $_mac = \base64_decode($hmac);
                 break;
-            case 'A2':
+            default:
                 $_mac = \hex2bin($hmac);
                 break;
         }
@@ -136,9 +134,7 @@ abstract class SAFE
                 $cf['block_mode'],
                 $version
             ),
-            self::getBlockSize(
-                \strlen($_eKey)
-            )
+            $block_size
         );
     }
 
@@ -157,9 +153,21 @@ abstract class SAFE
             case 'A1':
             case 'A2':
                 return [
+                    'driver' => 'mcrypt',
                     'block_mode' => MCRYPT_MODE_CBC,
                     'cipher' => 'aes',
                     'hmac_algo' => 'sha256',
+                    'pbkdf2_algo' => 'sha256',
+                    'pbkdf2_iterations' => 8000
+                ];
+            case 'B1':
+                return [
+                    'driver' => 'openssl',
+                    'cipher' => 'aes',
+                    'block_mode' => 'cbc',
+                    'len_cipher_key' => 24,
+                    'hmac_algo' => 'sha256',
+                    'len_hmac_key' => 32,
                     'pbkdf2_algo' => 'sha256',
                     'pbkdf2_iterations' => 8000
                 ];
@@ -172,30 +180,50 @@ abstract class SAFE
      * Use PBKDF2 to derive the authentication key for this $base.
      *
      * @param string $base
-     * @param string $verion
+     * @param string $version
      * @return string
      */
     protected static function getAuthKey($base = null, $version = self::VERSION)
     {
         $cf = self::config($version);
 
-        $l = \strlen($base);
-        return \hash_pbkdf2($cf['pbkdf2_algo'], $base, 'authentication', $cf['pbkdf2_iterations'], $l, true);
+        $l = isset($cf['len_hmac_key'])
+                ? $cf['len_hmac_key']
+                : \strlen($base);
+        
+        return \hash_pbkdf2(
+            $cf['pbkdf2_algo'],
+            $base,
+            'authentication',
+            $cf['pbkdf2_iterations'],
+            $l,
+            true
+        );
     }
 
     /**
      * Use PBKDF2 to derive the encryption key for this $base.
      *
      * @param string $base
-     * @param string $verion
+     * @param string $version
      * @return string
      */
     protected static function getSecretKey($base = null, $version = self::VERSION)
     {
         $cf = self::config($version);
 
-        $l = \strlen($base);
-        return \hash_pbkdf2($cf['pbkdf2_algo'], $base, 'encryption', $cf['pbkdf2_iterations'], $l, true);
+        $l = isset($cf['len_cipher_key'])
+                ? $cf['len_cipher_key']
+                : \strlen($base);
+        
+        return \hash_pbkdf2(
+            $cf['pbkdf2_algo'],
+            $base,
+            'encryption',
+            $cf['pbkdf2_iterations'],
+            $l,
+            true
+        );
     }
 
     /**
@@ -211,21 +239,30 @@ abstract class SAFE
         switch(\strtolower($cf['cipher']))
         {
             case 'aes':
-                switch($keylen)
-                {
-                    case 16:
-                    case 24:
-                    case 32:
-                        return MCRYPT_RIJNDAEL_128;
-                    default:
-                        throw new \Exception("Unsupported key length: " . \strlen($key));
+                if ($cf['driver'] === 'openssl') {
+                    switch ($keylen) {
+                        case 16:
+                            return 'aes-128';
+                        case 24:
+                            return 'aes-192';
+                        case 32:
+                            return 'aes-256';
+                        default:
+                            throw new \Exception("Unsupported key length: " . $keylen);
+                    }
+                } else {
+                    switch($keylen) {
+                        case 16:
+                        case 24:
+                        case 32:
+                            return MCRYPT_RIJNDAEL_128;
+                    }
                 }
             break;
             case 'twofish':
                 return MCRYPT_TWOFISH;
-            default:
-                throw new \Exception("Unsupported key length: " . \strlen($key));
         }
+        throw new \Exception("Unsupported key length: " . $keylen);
     }
 
     /**
@@ -274,27 +311,49 @@ abstract class SAFE
 
     private static function encryptOnly($plaintext, $key, $iv, $mode, $version = self::VERSION)
     {
+        $cf = self::config($version);
         $alg = self::getAlgorithm(\strlen($key), $version);
-
-        return \mcrypt_encrypt(
-            $alg,
-            $key,
-            $plaintext,
-            $mode,
-            $iv
-        );
+        
+        if ($cf['driver'] === 'openssl') {
+            return \openssl_encrypt(
+                $plaintext, 
+                $alg.'-'.$cf['block_mode'],
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv
+            );
+        } else {
+            return \mcrypt_encrypt(
+                $alg,
+                $key,
+                $plaintext,
+                $mode,
+                $iv
+            );
+        }
     }
 
     private static function decryptOnly($ciphertext, $key, $iv, $mode, $version = self::VERSION)
     {
+        $cf = self::config($version);
         $alg = self::getAlgorithm(\strlen($key), $version);
 
-        return \mcrypt_decrypt(
-            $alg,
-            $key,
-            $ciphertext,
-            $mode,
-            $iv
-        );
+        if ($cf['driver'] === 'openssl') {
+            return \openssl_decrypt(
+                $ciphertext, 
+                $alg.'-'.$cf['block_mode'],
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv
+            );
+        } else {
+            return \mcrypt_decrypt(
+                $alg,
+                $key,
+                $ciphertext,
+                $mode,
+                $iv
+            );
+        }
     }
 }

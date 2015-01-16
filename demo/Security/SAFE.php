@@ -25,6 +25,7 @@ try {
     
     $dec = \Resonantcore\Lib\Security\SAFE::decrypt($msg, $key);
     echo "OOPS! Invalid MAC didn't throw an exception. :( \n";
+    echo $dec . "\n";
 } catch (Exception $e) {
     echo "An intentionally bad MAC failed to validate.\n";
 }
