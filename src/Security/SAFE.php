@@ -107,15 +107,7 @@ abstract class SAFE
         // Decode the paramaters
         $_iv = \base64_decode($iv);
         $_cipher = \base64_decode($cipher);
-        switch ($version) {
-            case 'A0':
-            case 'A1':
-                $_mac = \base64_decode($hmac);
-                break;
-            default:
-                $_mac = \hex2bin($hmac);
-                break;
-        }
+        $_mac = \hex2bin($hmac);
 
         // Let's check our MAC
         if (!\hash_equals(
@@ -149,20 +141,8 @@ abstract class SAFE
     protected static function config($version = self::VERSION)
     {
         switch ($version) {
-            case 'A0':
-            case 'A1':
-            case 'A2':
-                return [
-                    'driver' => 'mcrypt',
-                    'block_mode' => MCRYPT_MODE_CBC,
-                    'cipher' => 'aes',
-                    'hmac_algo' => 'sha256',
-                    'pbkdf2_algo' => 'sha256',
-                    'pbkdf2_iterations' => 8000
-                ];
             case 'B1':
                 return [
-                    'driver' => 'openssl',
                     'cipher' => 'aes',
                     'block_mode' => 'cbc',
                     'len_cipher_key' => 24,
@@ -173,10 +153,9 @@ abstract class SAFE
                 ];
             case 'B2':
                 return [
-                    'driver' => 'openssl',
                     'cipher' => 'aes',
                     'block_mode' => 'gcm',
-                    'len_cipher_key' => 16,
+                    'len_cipher_key' => 24,
                     'hmac_algo' => 'sha256',
                     'len_hmac_key' => 32,
                     'pbkdf2_algo' => 'sha256',
@@ -250,28 +229,15 @@ abstract class SAFE
         switch(\strtolower($cf['cipher']))
         {
             case 'aes':
-                if ($cf['driver'] === 'openssl') {
-                    switch ($keylen) {
-                        case 16:
-                            return 'aes-128';
-                        case 24:
-                            return 'aes-192';
-                        case 32:
-                            return 'aes-256';
-                        default:
-                            throw new \Exception("Unsupported key length: " . $keylen);
-                    }
-                } else {
-                    switch($keylen) {
-                        case 16:
-                        case 24:
-                        case 32:
-                            return MCRYPT_RIJNDAEL_128;
-                    }
+                switch ($keylen) {
+                    case 16:
+                        return 'aes-128';
+                    case 24:
+                        return 'aes-192';
+                    case 32:
+                        return 'aes-256';
                 }
-            break;
-            case 'twofish':
-                return MCRYPT_TWOFISH;
+                break;
         }
         throw new \Exception("Unsupported key length: " . $keylen);
     }
@@ -288,7 +254,7 @@ abstract class SAFE
         switch(\strtolower($cf['cipher']))
         {
             case 'aes':
-                if ($cf['driver'] === 'openssl' && $cf['block_mode'] === 'gcm') {
+                if ($cf['block_mode'] === 'gcm') {
                     return 12;
                 }
                 return 16;
@@ -323,51 +289,51 @@ abstract class SAFE
         return \substr($plaintext, 0, $l);
     }
 
+    /**
+     * Only perform encryption. Unauthenticated by the library.
+     * 
+     * @param string $plaintext
+     * @param string $key
+     * @param string $iv
+     * @param string $mode
+     * @param string $version
+     * @return string
+     */
     private static function encryptOnly($plaintext, $key, $iv, $mode, $version = self::VERSION)
     {
         $cf = self::config($version);
         $alg = self::getAlgorithm(\strlen($key), $version);
         
-        if ($cf['driver'] === 'openssl') {
-            return \openssl_encrypt(
-                $plaintext, 
-                $alg.'-'.$cf['block_mode'],
-                $key,
-                OPENSSL_RAW_DATA,
-                $iv
-            );
-        } else {
-            return \mcrypt_encrypt(
-                $alg,
-                $key,
-                $plaintext,
-                $mode,
-                $iv
-            );
-        }
+        return \openssl_encrypt(
+            $plaintext, 
+            $alg.'-'.$cf['block_mode'],
+            $key,
+            OPENSSL_RAW_DATA,
+            $iv
+        );
     }
 
+    /**
+     * Only perform decryption. No verification is performed.
+     * 
+     * @param string $ciphertext
+     * @param string $key
+     * @param string $iv
+     * @param string $mode
+     * @param string $version
+     * @return string
+     */
     private static function decryptOnly($ciphertext, $key, $iv, $mode, $version = self::VERSION)
     {
         $cf = self::config($version);
         $alg = self::getAlgorithm(\strlen($key), $version);
 
-        if ($cf['driver'] === 'openssl') {
-            return \openssl_decrypt(
-                $ciphertext, 
-                $alg.'-'.$cf['block_mode'],
-                $key,
-                OPENSSL_RAW_DATA,
-                $iv
-            );
-        } else {
-            return \mcrypt_decrypt(
-                $alg,
-                $key,
-                $ciphertext,
-                $mode,
-                $iv
-            );
-        }
+        return \openssl_decrypt(
+            $ciphertext, 
+            $alg.'-'.$cf['block_mode'],
+            $key,
+            OPENSSL_RAW_DATA,
+            $iv
+        );
     }
 }
