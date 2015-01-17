@@ -1,6 +1,8 @@
 <?php
 namespace Resonantcore\Lib;
 
+use \Resonantcore\Lib\Issues as ResonantIssue;
+
 /**
  * The MIT License (MIT)
  * 
@@ -133,10 +135,10 @@ class DB extends \PDO
         }
         $stmt = $this->prepare($statement);
         $exec = $stmt->execute($params);
-        if ($exec) {
-            return $stmt->fetchAll($fetch_style);
+        if ($exec === false) {
+            throw new ResonantIssue\Query($statement, $params);
         }
-        return false;
+        return $stmt->fetchAll($fetch_style);
     }
     
     /**
@@ -345,10 +347,10 @@ class DB extends \PDO
     {
         $stmt = $this->prepare($statement);
         $exec = $stmt->execute($params);
-        if ($exec) {
-            return $stmt->fetchColumn(0);
+        if ($exec === false) {
+            throw new ResonantIssue\Query($statement, $params);
         }
-        return false;
+        return $stmt->fetchColumn(0);
     }
 
     /**
