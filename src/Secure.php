@@ -1,6 +1,8 @@
 <?php
 namespace Resonantcore\Lib;
 
+use \Resonantcore\Lib\Issues as ResonantIssue;
+
 /**
  * The MIT License (MIT)
  * 
@@ -79,7 +81,7 @@ abstract class Secure
                 \trigger_error("\$bytes must be a positive integer greater than zero.", E_USER_WARNING);
                 return false;
             }
-            throw new \Exception("\$bytes must be a positive integer greater than zero.");
+            throw new ResonantIssue\Secure("\$bytes must be a positive integer greater than zero.");
         }
         if (function_exists('\mcrypt_create_iv')) {
             // mcrypt_create_iv() is smart; uses Windows APIs to get entropy if it needs to
