@@ -10,7 +10,7 @@ class CSRFTest extends PHPUnit_Framework_TestCase
         @session_start();
 
         ob_start();
-        \Resonantcore\Lib\Security\CSRF::insert_token();
+        \Resonantcore\Lib\Security\CSRF::insertToken();
         $token_html = ob_get_clean();
 
         $this->assertFalse(
