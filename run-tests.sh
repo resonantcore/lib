@@ -1,18 +1,17 @@
 #!/bin/bash
 
 clean=1 # Clean up?
-gpg --fingerprint 0x4AA394086372C20A
+gpg --fingerprint D8406D0D82947747293778314AA394086372C20A
 if [ $? -ne 0 ]; then
     echo -e "\033[33mDownloading PGP Public Key...\033[0m"
-    gpg --recv-keys 0x4AA394086372C20A
+    gpg --recv-keys D8406D0D82947747293778314AA394086372C20A
     # Sebastian Bergmann <sb@sebastian-bergmann.de>
-    gpg --fingerprint 0x4AA394086372C20A
+    gpg --fingerprint D8406D0D82947747293778314AA394086372C20A
     if [ $? -ne 0 ]; then
         echo -e "\033[31mCould not download PGP public key for verification\033[0m"
         exit
     fi
 fi
-
 if [ "$clean" -eq 1 ]; then
     # Let's clean them up, if they exist
     if [ -f phpunit.phar ]; then
