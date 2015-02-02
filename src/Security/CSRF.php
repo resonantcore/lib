@@ -38,24 +38,33 @@ class CSRF
     public static $hmac_ip = true;
 
     /**
-     * Insert a CSRF prevention token to a form
+     * Insert a CSRF token to a form
      * 
-     * @param boolean $echo - output to stdout? If false, return a string.
+     * @param $lockto If specified, this CSRF token is only valid for this HTTP request endpoint
+     * @param $echo if true, echo instead of returning
      * @return string
      */
-    public static function insertToken($echo = true)
+    public static function insertToken($lockto = null, $echo = true)
     {
         $ret = '';
         if (!isset($_SESSION[self::SESSION_INDEX])) {
             $_SESSION[self::SESSION_INDEX] = [];
         }
 
-        list($index, $token) = self::generateToken();
+        list($index, $token) = self::generateToken($lockto);
 
         $ret .= "<!--\n--><input type=\"hidden\" name=\"".self::FORM_INDEX."\" value=\"".Resonant\Secure::noHTML($index)."\" />";
 
         if (self::$hmac_ip !== false) {
             // Use HMAC to only allow this particular IP to send this request
+            $algorithms = \hash_algos();
+            $ha = \in_array(
+                    $C['sessions']['hmac_ip'],
+                    $algorithms
+                )
+                ? $C['sessions']['hmac_ip']
+                : self::HASH_ALGO;
+
             $token = \base64_encode(
                 \hash_hmac(
                     self::HASH_ALGO,
@@ -100,6 +109,17 @@ class CSRF
             return false;
         }
         $stored = $_SESSION[self::SESSION_INDEX][$index];
+        
+        if (!empty($stored['lockto'])) {
+            $lockto = $_SERVER['REQUEST_URI'];
+            if (\preg_match('#/$#', $lockto)) {
+                $lockto = substr($lockto, 0, strlen($lockto) - 1);
+            }
+            if ($lockto != $stored['lockto']) {
+                // Form target did not match the lockto request!
+                return false;
+            }
+        }
 
         // This is the expected token value
         if (self::$hmac_ip === false) {
@@ -131,7 +151,7 @@ class CSRF
      * 
      * @return array [string, string]
      */
-    protected static function generateToken()
+    protected static function generateToken($lockto = null)
     {
         $index = \base64_encode(Resonant\Secure::random_bytes(18));
         $token = \base64_encode(Resonant\Secure::random_bytes(32));
@@ -143,11 +163,19 @@ class CSRF
                 : $_SERVER['SCRIPT_NAME'],
             'token' => $token
         ];
+        if (!empty($lockto)) {
+            if (\preg_match('#/$#', $lockto)) {
+                $lockto = substr($lockto, 0, strlen($lockto) - 1);
+            }
+            $_SESSION[self::SESSION_INDEX][$index]['lockto'] = $lockto;
+        } else {
+            $_SESSION[self::SESSION_INDEX][$index]['lockto'] = null;
+        }
 
         self::recycleTokens();
         return [ $index, $token ];
     }
-    
+
     /**
      * Enforce an upper limit on the number of tokens stored in session state
      * by removing the oldest tokens first.
