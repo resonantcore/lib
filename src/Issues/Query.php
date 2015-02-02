@@ -13,6 +13,6 @@ class Query extends \Exception
 
     public function getMessage()
     {
-        return $this->message . "\n" \json_encode($this->params);
+        return $this->message . "\n" . \json_encode($this->params);
     }
 }
