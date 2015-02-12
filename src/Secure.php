@@ -89,6 +89,7 @@ abstract class Secure
         } elseif (\is_readable('/dev/urandom')) {
             // If /dev/urandom is readable, grab some entropy
             $fp = \fopen('/dev/urandom', 'rb');
+            stream_set_read_buffer($fp, 0);
             $buf = \fread($fp, $bytes);
             \fclose($fp);
             if ($buf !== false) {
