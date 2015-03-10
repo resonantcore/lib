@@ -1,3 +1,7 @@
+# Notice
+
+We are no longer maintaining this library. Instead, we intend to separate each library into its own repository then delete this one.
+
 ## Resonant Core Library
 
 [![Build Status](https://travis-ci.org/resonantcore/lib.svg?branch=master)](https://travis-ci.org/resonantcore/lib)
